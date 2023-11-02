@@ -59,7 +59,7 @@ def quad_avg(pix_acc, x, y):
     else:
       y0_avg = pix_acc[x0,y0][col]   * (1-xd) + pix_acc[x0+1,y0][col]   * xd
       if yd > d_eps:
-        y1_avg = pix_acc[x0,y0+1][col] * (1-xd) + pix_acc[x0+1,y0+1][col] * xd
+        y1_avg = pix_acc[x0,y0-1][col] * (1-xd) + pix_acc[x0+1,y0+1][col] * xd
     if yd <= d_eps:
       r.append(int(y0_avg + 0.5))
     else:
@@ -201,6 +201,7 @@ for imgfile in files:
         imgfiles = glob.glob(imgfile)
     else:
         imgfiles = [imgfile]
+    # print(imgfiles)
     for imgfile in imgfiles:
         if repeat_img > 1:
             print("encoding %s (%d)..." % (imgfile, repeat_img))
