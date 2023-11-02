@@ -191,30 +191,37 @@ def polar_bin_test(x=-1):
   return out
 
 
-o = open("rgb_enc_01.bin", "wb")
-header = [ 0x00, 0x00, 0x00, 0x3c, 0x18 ]               # seen with Gif-Anims
-# header = [ 0x00, 0x00, 0x00, 0x01, 0x18 ]             # seen with mp4
-padding = bytes([0] * padsize)
-
-for i in range(5, 0x1000):
-  header.append(random.randint(0,255))
-o.write(bytes(header))
 
 # for i in range(20):
 #   data = polar_bin_test(i)
-
-for imgfile in sys.argv[1:]:
-  if repeat_img > 1:
-    print("encoding %s (%d)..." % (imgfile, repeat_img))
-  else:
-    print("encoding %s ..." % imgfile)
-  im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
-  data = encode_polar_bin(im, min(im.height, im.width))
-
-  for rep in range(repeat_img):
-    for row in data:
-      o.write(bytes(row))
-    o.write(padding)
-
-o.close()
+import glob
+files = sys.argv[1:]
+for imgfile in files:
+    if '*' in imgfile:
+        imgfiles = glob.glob(imgfile)
+    else:
+        imgfiles = [imgfile]
+    for imgfile in imgfiles:
+        if repeat_img > 1:
+            print("encoding %s (%d)..." % (imgfile, repeat_img))
+        else:
+            print("encoding %s ..." % imgfile)
+        im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
+        data = encode_polar_bin(im, min(im.height, im.width))
+        o = open(f"{imgfile}.bin", "wb")
+        header = bytearray([0] * 0x1000)
+        header[:10] = [ 0x22, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00, 0x01 ]
+        header[0x10:0x16] = [0x0,0x1,0x0,0x1,0x10,0x01]
+        header[0xbd0:0xbd7] = [0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11]
+        # header = [ 0x00, 0x00, 0x00, 0x3c, 0x18 ]               # seen with Gif-Anims
+        # header = [ 0x00, 0x00, 0x00, 0x01, 0x18 ]             # seen with mp4
+        padding = bytes([0] * padsize)
+        # for i in range(len(header), 0x1000):
+        #     header.append(0)
+        o.write(bytes(header))
+        for rep in range(repeat_img):
+            for row in data:
+                o.write(bytes(row))
+            o.write(padding)
+        o.close()
 
