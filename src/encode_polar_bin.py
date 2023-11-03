@@ -15,7 +15,7 @@
 
 version = '0.4'
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageOps
 import os, sys, math, random
 
 debug = False    # use small test values
@@ -138,15 +138,18 @@ def encode_polar_bin(im, diam=diam_def, c_x=None, c_y=None):
   for n in range(n_rays):
     phi = math.radians(360.*(n_rays-n)/n_rays)
     sca = float(diam-1)/float(leds-1)
+    print(n)
     if verbose:
       print("n=%d\t" % n, end='')
     for led in range(leds//2):
       (x,y) = polar2cart(c_x, c_y, (0.5+led) * sca, phi)
+      print(int(x),int(y))
       if verbose:
         print("(%.2f, %.2f) " % (x,y), end="")
       rgb = quad_avg(pix, x, y)
       ### bit interleaved in 24 bits for 8 rings.
       (cr,cg,cb) = rgb_bit_columns(led, po_width)
+      print(cr,cg,cb)
       po[cr].append(rgb[0])
       po[cg].append(rgb[1])
       po[cb].append(rgb[2])
@@ -165,9 +168,45 @@ def encode_polar_bin(im, diam=diam_def, c_x=None, c_y=None):
     for n in range(n_rays):
       val = po[column][n]
       if ordered_dith(column, n, val):
-        out[n][byte] |= bitval;
+        out[n][byte] |= bitval
   return out
 
+import numpy as np
+def encode_polar_bin2(im):
+    leds = 224
+    ledh = leds//2
+    n_rays = 2700
+    # tg = Image.new('RGB',(ledh, n_rays))
+    R = 2
+    G = 1
+    B = 0
+    m = [(2,G),(2,B),(1,R),(1,G),(1,B),(0,R),(0,G),(0,B),(5,B),(4,R),(4,G),(4,B),(3,R),(3,G),(3,B),(2,R),(7,R),(7,G),(7,B),(6,R),(6,G),(6,B),(5,R),(5,G)]
+    b = []
+    num = 0
+    width, height = im.size   # Get dimensions
+    r = min(im.size)
+    left = (width - r)/2
+    top = (height - r)/2
+    right = (width + r)/2
+    bottom = (height + r)/2
+
+    # Crop the center of the image
+    im = im.crop((left, top, right, bottom))    
+    image = im.resize((leds,leds))
+    for i in range(n_rays):
+        part = image.rotate(-360/n_rays*i).crop((ledh,ledh,leds,ledh+1))
+        a = (np.array(part)[0][::-1,:3]//128)
+        for block in range(0, ledh, 8):
+            for each_byte in np.array(m).reshape(3, 8, 2):
+                c = 0
+                for ix, each_bit in enumerate(each_byte):
+                    c += (a[block:][tuple(each_bit)]<<ix)
+                # print(block, num, c)
+                b.append(c)
+                num += 1
+        # tg.paste(part, (0, i))
+    # display(tg)
+    return b
 
 def polar_bin_test(x=-1):
   ## prepare a frame for the binary format
@@ -208,7 +247,8 @@ for imgfile in files:
         else:
             print("encoding %s ..." % imgfile)
         im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
-        data = encode_polar_bin(im, min(im.height, im.width))
+        data = encode_polar_bin2(im)
+        # print(len(data))
         o = open(f"{imgfile}.bin", "wb")
         header = bytearray([0] * 0x1000)
         header[:10] = [ 0x22, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x00, 0x01 ]
@@ -221,8 +261,9 @@ for imgfile in files:
         #     header.append(0)
         o.write(bytes(header))
         for rep in range(repeat_img):
-            for row in data:
-                o.write(bytes(row))
+            # for row in data:
+                # print(row)
+            o.write(bytes(data))
             o.write(padding)
         o.close()
 
