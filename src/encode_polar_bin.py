@@ -172,41 +172,60 @@ def encode_polar_bin(im, diam=diam_def, c_x=None, c_y=None):
   return out
 
 import numpy as np
-def encode_polar_bin2(im):
+def encode_polar_bin2(imgfile):
     leds = 224
     ledh = leds//2
-    n_rays = 2700
+    n_rays = 2700//6
     # tg = Image.new('RGB',(ledh, n_rays))
-    R = 2
+    R = 0
     G = 1
-    B = 0
+    B = 2
     m = [(2,G),(2,B),(1,R),(1,G),(1,B),(0,R),(0,G),(0,B),(5,B),(4,R),(4,G),(4,B),(3,R),(3,G),(3,B),(2,R),(7,R),(7,G),(7,B),(6,R),(6,G),(6,B),(5,R),(5,G)]
-    b = []
+    am = np.array(m).reshape(3, 8, 2)
     num = 0
+    im = Image.open(imgfile).convert('RGB')
     width, height = im.size   # Get dimensions
     r = min(im.size)
     left = (width - r)/2
     top = (height - r)/2
     right = (width + r)/2
     bottom = (height + r)/2
-
+    bb = []
     # Crop the center of the image
     im = im.crop((left, top, right, bottom))    
     image = im.resize((leds,leds))
+    image.save(f'{imgfile}_crop.png', format='PNG')
+    tg = Image.new('RGB',(ledh,n_rays))
+    dith = np.array([[0,0,0,0,0,0],
+            [1,0,0,0,0,0],
+            [1,1,0,0,0,0],
+            [1,1,1,0,0,0],
+            [1,1,1,1,0,0],
+            [1,1,1,1,1,0],
+            [1,1,1,1,1,1]])
     for i in range(n_rays):
         part = image.rotate(-360/n_rays*i).crop((ledh,ledh,leds,ledh+1))
-        a = (np.array(part)[0][::-1,:3]//128)
+        tg.paste(part, (0,i))
+        a = (np.array(part)[0][::-1,:3]//42)
+        b = [[],[],[],[],[],[]]
         for block in range(0, ledh, 8):
-            for each_byte in np.array(m).reshape(3, 8, 2):
-                c = 0
+            for each_byte in am:
+                c=np.array([0,0,0,0,0,0])
                 for ix, each_bit in enumerate(each_byte):
-                    c += (a[block:][tuple(each_bit)]<<ix)
+                    c += (dith[a[block:][tuple(each_bit)]]<<ix)
                 # print(block, num, c)
-                b.append(c)
+                b[0].append(c[5])
+                b[1].append(c[4])
+                b[2].append(c[3])
+                b[3].append(c[2])
+                b[4].append(c[1])
+                b[5].append(c[0])
                 num += 1
+        bb.append(b)
         # tg.paste(part, (0, i))
     # display(tg)
-    return b
+    tg.save(f'{imgfile}_converted.png', format='PNG')
+    return list(np.array(bb).reshape(-1))
 
 def polar_bin_test(x=-1):
   ## prepare a frame for the binary format
@@ -246,8 +265,8 @@ for imgfile in files:
             print("encoding %s (%d)..." % (imgfile, repeat_img))
         else:
             print("encoding %s ..." % imgfile)
-        im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
-        data = encode_polar_bin2(im)
+        # im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
+        data = encode_polar_bin2(imgfile)
         # print(len(data))
         o = open(f"{imgfile}.bin", "wb")
         header = bytearray([0] * 0x1000)
