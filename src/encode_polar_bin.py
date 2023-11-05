@@ -183,7 +183,11 @@ def encode_polar_bin2(imgfile):
     m = [(2,G),(2,B),(1,R),(1,G),(1,B),(0,R),(0,G),(0,B),(5,B),(4,R),(4,G),(4,B),(3,R),(3,G),(3,B),(2,R),(7,R),(7,G),(7,B),(6,R),(6,G),(6,B),(5,R),(5,G)]
     am = np.array(m).reshape(3, 8, 2)
     num = 0
-    im = Image.open(imgfile).convert('RGB')
+    if '.svg' in imgfile:
+        import pyvips
+        im = pyvips.Image.new_from_file(imgfile, dpi=300)
+    else:
+        im = Image.open(imgfile).convert('RGB')
     width, height = im.size   # Get dimensions
     r = min(im.size)
     left = (width - r)/2
@@ -206,7 +210,9 @@ def encode_polar_bin2(imgfile):
     for i in range(n_rays):
         part = image.rotate(-360/n_rays*i).crop((ledh,ledh,leds,ledh+1))
         tg.paste(part, (0,i))
-        a = (np.array(part)[0][::-1,:3]//42)
+        a0 = np.array(part)[0][::-1,:3]
+        print(i, a0//42)
+        a = (a0//42)
         b = [[],[],[],[],[],[]]
         for block in range(0, ledh, 8):
             for each_byte in am:
@@ -261,6 +267,8 @@ for imgfile in files:
         imgfiles = [imgfile]
     # print(imgfiles)
     for imgfile in imgfiles:
+        if '.crop.' in imgfile or 'converted.' in imgfile:
+            continue
         if repeat_img > 1:
             print("encoding %s (%d)..." % (imgfile, repeat_img))
         else:
