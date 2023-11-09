@@ -6,22 +6,33 @@ from img2bin import img2bin
 from bin2img import bin2img
 
 if __name__=='__main__':
+    cnt = 10
     usernames = sys.argv[1:]
+    args = sys.argv[1:]
+    for arg in args:
+        if arg.isnumeric():
+            cnt = int(arg)
+            if cnt < 10:
+                cnt = 10
+            break
     if not len(usernames):
-        usernames = ['coffeeblossom_gearong']
+        usernames = ['coffeeblossom_gaerong']
     L = instaloader.Instaloader()
     for username in usernames:
         profile = instaloader.Profile.from_username(L.context, username)
         for post in profile.get_posts():
             L.download_post(post, username)
+            cnt -= 1
+            if cnt==0:
+                break
         files = glob.glob(f'{username}/*.jpg')
         files.extend(glob.glob(f'{username}/*.png'))
         repeat_img = 1
         padsize = 1288        # number of \0 bytes between frames.
-        for imgfile in files:
-            if '_crop.' in imgfile or 'converted.' in imgfile or '.bin.png' in imgfile:
+        for imgfile in files[::-1]:
+            if '_crop.' in imgfile or 'converted.' in imgfile or '.bin.png' in imgfile or os.path.exists(f'{imgfile}.bin'):
                 continue
-            print("encoding %s ..." % imgfile)
+            print(f'img2bin {imgfile}')
             # im = Image.open(imgfile).convert('RGB')       # make sure it is RGB
             data = img2bin(imgfile)
             # print(len(data))
@@ -44,4 +55,4 @@ if __name__=='__main__':
                 o.write(padding)
             o.close()
             bin2img(binfile)
-        
+

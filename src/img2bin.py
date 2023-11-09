@@ -2,8 +2,9 @@ import glob
 from PIL import Image, ImageDraw
 import math, sys, os
 import numpy as np
+from io import BytesIO
 
-def img2bin(imgfile):
+def img2bin(img, imgfile=None):
     leds = 224
     ledh = leds//2
     n_rays = 2700//6
@@ -14,11 +15,19 @@ def img2bin(imgfile):
     m = [(2,G),(2,B),(1,R),(1,G),(1,B),(0,R),(0,G),(0,B),(5,B),(4,R),(4,G),(4,B),(3,R),(3,G),(3,B),(2,R),(7,R),(7,G),(7,B),(6,R),(6,G),(6,B),(5,R),(5,G)]
     am = np.array(m).reshape(3, 8, 2)
     num = 0
-    if '.svg' in imgfile:
-        import pyvips
-        im = pyvips.Image.new_from_file(imgfile, dpi=300)
+    if type(img) == str:
+        imgfile = img
+        if '.svg' in imgfile:
+            import pyvips
+            im = pyvips.Image.new_from_file(imgfile, dpi=300)
+        else:
+            im = Image.open(imgfile).convert('RGB')
+    elif type(img) == bytes: 
+        if imgfile is None:
+            imgfile = 'imgfile'
+        im = Image.open(BytesIO(img))
     else:
-        im = Image.open(imgfile).convert('RGB')
+        return None
     width, height = im.size   # Get dimensions
     r = min(im.size)
     left = (width - r)/2
@@ -29,6 +38,7 @@ def img2bin(imgfile):
     # Crop the center of the image
     im = im.crop((left, top, right, bottom))    
     image = im.resize((leds,leds))
+
     image.save(f'{imgfile}_crop.png', format='PNG')
     tg = Image.new('RGB',(ledh,n_rays))
     dith = np.array([[0,0,0,0,0,0],
