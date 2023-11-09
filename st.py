@@ -2,7 +2,9 @@ import streamlit as st
 import os, sys
 sys.path.append('src')
 
-st.header(':coffee: 까페블라썸 :cake:', divider='rainbow')
+title = '커피블라썸-개롱역'
+st.set_page_config(page_title=title, page_icon = 'favicon.png', initial_sidebar_state = 'auto')
+st.header(f':coffee: {title} :cake:', divider='rainbow')
 st.title('홀로그램 팬 파일 변환')
 
 import glob
@@ -43,12 +45,16 @@ else:
     cnt = 10
     usernames = ['coffeeblossom_gaerong']
     for username in usernames:
-        profile = instaloader.Profile.from_username(L.context, username)
-        for post in profile.get_posts():
-            L.download_post(post, username)
-            cnt -= 1
-            if cnt==0:
-                break
+        try:
+            profile = instaloader.Profile.from_username(L.context, username)
+            for post in profile.get_posts():
+                L.download_post(post, username)
+                cnt -= 1
+                if cnt==0:
+                    break
+        except:
+            import traceback 
+            traceback.print_exc()
         files = glob.glob(f'{username}/*.jpg')
         repeat_img = 1
         padsize = 1288        # number of \0 bytes between frames.        
