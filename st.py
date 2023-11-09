@@ -2,6 +2,7 @@ import streamlit as st
 import os, sys
 sys.path.append('src')
 
+st.header(':coffee: 까페블라썸 :cake:', divider='rainbow')
 st.title('홀로그램 팬 파일 변환')
 
 import glob
@@ -14,7 +15,7 @@ import instaloader
 if not os.path.exists('./static'):
     os.mkdir('./static')
 
-uploaded_files = st.file_uploader('Image', accept_multiple_files=True)
+uploaded_files = st.file_uploader('Image', accept_multiple_files=True, type=['png','jpg'])
 if len(uploaded_files):
     for file in uploaded_files:
         data = img2bin(file.getvalue(), file.name)
