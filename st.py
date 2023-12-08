@@ -85,6 +85,8 @@ else:
                     o.write(padding)
                 o.close()
                 bin2img(binfile)
-            st.markdown(open(imgfile.replace('jpg','txt'), encoding='utf-8').read())
+            file = imgfile.replace('jpg','txt')
+            if os.path.exists(file):
+                st.markdown(open(file, encoding='utf-8').read())
             st.download_button("Download", open(binfile, 'rb').read(), binfile)
             st.image(f'{binfile}.png')        
